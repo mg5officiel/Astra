@@ -1,0 +1,61 @@
+name: Android APK
+
+# Lancement manuel : onglet Actions > "Android APK" > Run workflow
+# (se lance aussi à chaque push sur la branche ionic-migration)
+on:
+  workflow_dispatch:
+  push:
+    branches: [ionic-migration]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      # Le CLI Capacitor 8 exige Node 22 ou plus
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Capacitor 8 compile en Java 21
+      - name: Installer Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Construire l'application web
+        run: npm run build
+
+      # Si le dossier android/ n'est pas dans le dépôt, on le génère.
+      - name: Générer le projet Android si absent
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+
+      # Icônes du lanceur, générées depuis assets/ (icon-only, icon-foreground, icon-background)
+      - name: Générer les icônes Android
+        run: |
+          if [ -d assets ]; then npx --yes @capacitor/assets@3.0.5 generate --android; fi
+
+      - name: Synchroniser Capacitor
+        run: npx cap sync android
+
+      - name: Compiler l'APK (debug)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Publier l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
