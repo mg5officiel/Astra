@@ -1,0 +1,11 @@
+electron/service-account-key.json
+
+# Secrets et fichiers locaux
+.env
+.env.*
+!.env.example
+
+# Artefacts de build
+node_modules/
+dist/
+release/

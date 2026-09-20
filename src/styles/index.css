@@ -1,0 +1,45 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Styles globaux de l'enveloppe Ionic. Les couleurs métier restent pilotées par le thème existant. */
+html, body, #root { height: 100%; margin: 0; }
+body { font-family: Inter, system-ui, sans-serif; }
+
+.desktop-shell { position: fixed; inset: 0 auto 0 0; width: 250px; z-index: 20; }
+.ionic-sidebar { width: 250px; min-width: 250px; height: 100%; display: flex; flex-direction: column; padding: 16px 10px; transition: width .2s ease; overflow: hidden; }
+.ionic-sidebar.collapsed { width: 72px; min-width: 72px; }
+.ionic-sidebar-brand { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ionic-sidebar-brand small { font-size: 10px; }
+.ionic-sidebar-nav { flex: 1; overflow-y: auto; padding-top: 12px; }
+.sidebar-action { margin: 2px 0; text-transform: none; }
+.sidebar-footer { border-top: 1px solid rgba(0,0,0,.12); padding-top: 10px; }
+.page-content { --padding-start: 250px; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; }
+.page-content.desktop-sidebar-collapsed { --padding-start: 72px; }
+.page-container { min-height: 100%; padding: 24px; }
+.mobile-header { display: none; }
+.notification-dot { position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 999px; background: #ef4444; color: white; font-size: 9px; display: grid; place-items: center; }
+.ion-badge { margin-left: auto; background: #ef4444; color: white; border-radius: 999px; min-width: 20px; padding: 2px 6px; text-align: center; font-size: 11px; }
+
+@media (max-width: 1023px) {
+  .desktop-shell { display: none; }
+  .mobile-header { display: block; }
+  .page-content,
+  .page-content.desktop-sidebar-collapsed { --padding-start: 0; }
+  .page-container { padding: 16px; }
+}
+@media (max-width: 640px) {
+  .page-container { padding: 12px; }
+  ion-card { margin-inline: 0; }
+  .mobile-app-menu { --width: min(88vw, 320px); }
+}
+
+.login-content { --background: linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a); }
+.login-field { --background: rgba(255,255,255,.10); --border-color: rgba(255,255,255,.20); --border-radius: 12px; --padding-start: 40px; --padding-end: 12px; color: white; margin: 0; }
+.login-field ion-input { --color: white; --placeholder-color: rgba(199,210,254,.6); }
+.login-submit { --background: #4f46e5; --background-hover: #6366f1; --border-radius: 12px; min-height: 44px; }
+@media (max-width: 640px) { .login-content .max-w-md { width: 100%; } }
+
+.ionic-searchbar { --background: transparent; --box-shadow: none; --border-radius: 12px; --color: inherit; --placeholder-color: currentColor; width: 260px; padding: 0; }
+.ionic-searchbar::part(native) { border: 1px solid rgba(128,128,128,.25); border-radius: 12px; min-height: 44px; }
+@media (max-width: 640px) { .ionic-searchbar { width: 100%; } .page-container .overflow-x-auto { -webkit-overflow-scrolling: touch; } .page-container table { min-width: 720px; } }

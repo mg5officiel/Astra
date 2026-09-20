@@ -1,0 +1,29 @@
+name: Ionic CI
+
+on:
+  push:
+    branches: [ionic-migration]
+  pull_request:
+    branches: [main, ionic-migration]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm install --no-audit --no-fund
+
+      - name: Vérifier TypeScript
+        run: npx tsc --noEmit
+
+      - name: Construire l'application Ionic
+        run: npm run build
