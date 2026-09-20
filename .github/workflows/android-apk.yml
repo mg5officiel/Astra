@@ -14,6 +14,17 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v4
 
+      # Sans identifiants, l'application serait construite avec un compte admin vide et inutilisable.
+      - name: Vérifier les identifiants administrateur
+        env:
+          ADMIN_USER: ${{ secrets.VITE_DEFAULT_ADMIN_USERNAME }}
+          ADMIN_PASS: ${{ secrets.VITE_DEFAULT_ADMIN_PASSWORD }}
+        run: |
+          if [ -z "$ADMIN_USER" ] || [ -z "$ADMIN_PASS" ]; then
+            echo "::error::Secrets manquants : VITE_DEFAULT_ADMIN_USERNAME et VITE_DEFAULT_ADMIN_PASSWORD (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
       # Le CLI Capacitor 8 exige Node 22 ou plus
       - name: Installer Node.js
         uses: actions/setup-node@v4
@@ -32,6 +43,11 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Construire l'application web
+        env:
+          VITE_DEFAULT_ADMIN_USERNAME: ${{ secrets.VITE_DEFAULT_ADMIN_USERNAME }}
+          VITE_DEFAULT_ADMIN_PASSWORD: ${{ secrets.VITE_DEFAULT_ADMIN_PASSWORD }}
+          VITE_DEFAULT_ADMIN_NAME: ${{ secrets.VITE_DEFAULT_ADMIN_NAME }}
+          VITE_PASSWORD_SALT: ${{ secrets.VITE_PASSWORD_SALT }}
         run: npm run build
 
       # Si le dossier android/ n'est pas dans le dépôt, on le génère.
