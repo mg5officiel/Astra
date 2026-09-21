@@ -2,7 +2,7 @@ name: Ionic CI
 
 on:
   push:
-    branches: [ionic-migration]
+    branches: [main, ionic-migration]
   pull_request:
     branches: [main, ionic-migration]
 
@@ -17,7 +17,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          # Pas de cache npm : le dépôt ne contient pas encore de package-lock.json.
+          # npm install génère le lockfile nécessaire dans l'environnement CI.
 
       - name: Installer les dépendances
         run: npm install --no-audit --no-fund
