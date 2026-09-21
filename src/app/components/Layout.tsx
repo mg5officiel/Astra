@@ -1,28 +1,8 @@
-// Shell principal Ionic : menu mobile, navigation desktop et zone de contenu.
-import { useState, type ComponentType } from 'react';
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonMenu,
-  IonMenuToggle,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-} from '@ionic/react';
-import {
-  menuOutline,
-  logOutOutline,
-  chevronBackOutline,
-  chevronForwardOutline,
-  notificationsOutline,
-  settingsOutline,
-  shieldCheckmarkOutline,
-} from 'ionicons/icons';
+// Shell principal : interface desktop complète et interface mobile dédiée.
+import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { IonActionSheet, IonButton, IonContent, IonHeader, IonIcon, IonLabel, IonPage, IonTitle, IonToolbar } from '@ionic/react';
+import { gridOutline, cartOutline, cubeOutline, swapHorizontalOutline, settingsOutline, ellipsisHorizontalOutline, logOutOutline, chevronBackOutline, chevronForwardOutline, notificationsOutline, shieldCheckmarkOutline, receiptOutline, walletOutline, cashOutline, timeOutline } from 'ionicons/icons';
+import { App as CapacitorApp } from '@capacitor/app';
 import { useApp } from '../../contexts/AppContext';
 import Dashboard from '../pages/Dashboard';
 import StockPage from '../pages/StockPage';
@@ -35,150 +15,85 @@ import ExpensesPage from '../pages/ExpensesPage';
 import AdminPage from '../pages/AdminPage';
 import SettingsPage from '../pages/SettingsPage';
 
-const PAGES: Record<string, ComponentType> = {
-  dashboard: Dashboard,
-  stock: StockPage,
-  sales: SalesPage,
-  history: HistoryPage,
-  credits: CreditsPage,
-  services: ServicesPage,
-  accounting: AccountingPage,
-  expenses: ExpensesPage,
-  admin: AdminPage,
-  settings: SettingsPage,
-};
-
-const NAV_ITEMS = [
-  ['dashboard', 'Tableau de bord'],
-  ['stock', 'Gestion Stock'],
-  ['sales', 'Nouvelle Vente'],
-  ['history', 'Historique'],
-  ['credits', 'Emprunts / Crédit'],
-  ['services', 'Prestations'],
-  ['accounting', 'Comptabilité'],
-  ['expenses', 'Dépenses'],
-] as const;
+const PAGES: Record<string, ComponentType> = { dashboard: Dashboard, stock: StockPage, sales: SalesPage, history: HistoryPage, credits: CreditsPage, services: ServicesPage, accounting: AccountingPage, expenses: ExpensesPage, admin: AdminPage, settings: SettingsPage };
+const DESKTOP_NAV = [['dashboard','Tableau de bord',gridOutline],['sales','Ventes',cartOutline],['stock','Stock',cubeOutline],['credits','Emprunts / Crédit',swapHorizontalOutline],['history','Historique',timeOutline],['services','Prestations',receiptOutline],['accounting','Comptabilité',walletOutline],['expenses','Dépenses',cashOutline]] as const;
+const MOBILE_NAV = [['dashboard','Accueil',gridOutline],['sales','Ventes',cartOutline],['stock','Stock',cubeOutline],['credits','Emprunts',swapHorizontalOutline],['settings','Paramètres',settingsOutline]] as const;
+const SECONDARY_NAV = [['history','Historique',timeOutline],['services','Prestations',receiptOutline],['accounting','Comptabilité',walletOutline],['expenses','Dépenses',cashOutline]] as const;
 
 export function Layout() {
   const { currentView, setCurrentView, logout, currentUser, theme, articles } = useApp();
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const historyRef = useRef<string[]>([]);
+  const currentViewRef = useRef(currentView);
   const PageComponent = PAGES[currentView] || Dashboard;
   const lowStock = articles.filter((article) => article.stock <= article.minStock).length;
 
-  const navigate = (view: string) => setCurrentView(view);
+  useEffect(() => { currentViewRef.current = currentView; }, [currentView]);
+
+  useEffect(() => {
+    const listener = CapacitorApp.addListener('backButton', () => {
+      const previous = historyRef.current.pop();
+      if (previous) setCurrentView(previous);
+      else if (currentViewRef.current !== 'dashboard') setCurrentView('dashboard');
+      // Sur l'écran d'accueil, le bouton Retour ne force pas la fermeture de l'application.
+    });
+    return () => { listener.then((handle) => handle.remove()); };
+  }, [setCurrentView]);
+
+  const navigate = (view: string) => {
+    if (view === currentView) return;
+    historyRef.current.push(currentView);
+    setCurrentView(view);
+    setMoreOpen(false);
+  };
+
+  const goBack = () => {
+    const previous = historyRef.current.pop();
+    if (previous) setCurrentView(previous);
+    else setCurrentView('dashboard');
+  };
 
   return (
     <IonPage className={theme.bg}>
-      <IonMenu contentId="main-content" type="overlay" className="mobile-app-menu">
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>GESTION CYBER</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent>
-          <IonList lines="none">
-            {NAV_ITEMS.map(([id, label]) => (
-              <IonMenuToggle key={id} autoHide={false}>
-                <IonItem
-                  button
-                  detail={false}
-                  color={currentView === id ? 'light' : undefined}
-                  onClick={() => navigate(id)}
-                >
-                  <IonLabel>{label}</IonLabel>
-                  {id === 'stock' && lowStock > 0 && <span className="ion-badge">{lowStock}</span>}
-                </IonItem>
-              </IonMenuToggle>
-            ))}
-
-            {currentUser?.role === 'admin' && (
-              <IonMenuToggle autoHide={false}>
-                <IonItem button detail={false} onClick={() => navigate('admin')}>
-                  <IonIcon icon={shieldCheckmarkOutline} slot="start" />
-                  <IonLabel>Administration</IonLabel>
-                </IonItem>
-              </IonMenuToggle>
-            )}
-
-            <IonMenuToggle autoHide={false}>
-              <IonItem button detail={false} onClick={() => navigate('settings')}>
-                <IonIcon icon={settingsOutline} slot="start" />
-                <IonLabel>Paramètres</IonLabel>
-              </IonItem>
-            </IonMenuToggle>
-
-            <IonItem button detail={false} color="danger" onClick={logout}>
-              <IonIcon icon={logOutOutline} slot="start" />
-              <IonLabel>Déconnexion</IonLabel>
-            </IonItem>
-          </IonList>
-        </IonContent>
-      </IonMenu>
-
       <div className="desktop-shell">
         <aside className={`ionic-sidebar ${desktopCollapsed ? 'collapsed' : ''} ${theme.sidebar}`}>
-          <div className="ionic-sidebar-brand">
-            <strong>GESTION CYBER</strong>
-            {!desktopCollapsed && <small>Librairie Papeterie Doumbiala</small>}
-          </div>
-
+          <div className="ionic-sidebar-brand"><strong>ASTRA</strong>{!desktopCollapsed && <small>Gestion & Administration</small>}</div>
           <nav className="ionic-sidebar-nav" aria-label="Navigation principale">
-            {NAV_ITEMS.map(([id, label]) => (
-              <IonButton
-                key={id}
-                fill={currentView === id ? 'solid' : 'clear'}
-                expand="block"
-                className="sidebar-action"
-                onClick={() => navigate(id)}
-              >
-                <IonLabel>{desktopCollapsed ? label.charAt(0) : label}</IonLabel>
-              </IonButton>
-            ))}
+            {DESKTOP_NAV.map(([id,label,icon]) => <IonButton key={id} fill={currentView === id ? 'solid' : 'clear'} expand="block" className="sidebar-action" onClick={() => navigate(id)}><IonIcon icon={icon} slot="start" />{!desktopCollapsed && <IonLabel>{label}</IonLabel>}</IonButton>)}
           </nav>
-
           <div className="sidebar-footer">
-            {currentUser?.role === 'admin' && (
-              <IonButton fill="clear" expand="block" onClick={() => navigate('admin')}>
-                <IonLabel>{desktopCollapsed ? 'A' : 'Administration'}</IonLabel>
-              </IonButton>
-            )}
-            <IonButton fill="clear" expand="block" onClick={() => navigate('settings')}>
-              <IonLabel>{desktopCollapsed ? 'P' : 'Paramètres'}</IonLabel>
-            </IonButton>
-            <IonButton color="danger" fill="clear" expand="block" onClick={logout}>
-              <IonLabel>{desktopCollapsed ? 'D' : 'Déconnexion'}</IonLabel>
-            </IonButton>
-            <IonButton
-              fill="clear"
-              onClick={() => setDesktopCollapsed((value) => !value)}
-              aria-label={desktopCollapsed ? 'Développer le menu' : 'Réduire le menu'}
-            >
-              <IonIcon icon={desktopCollapsed ? chevronForwardOutline : chevronBackOutline} />
-            </IonButton>
+            {currentUser?.role === 'admin' && <IonButton fill="clear" expand="block" onClick={() => navigate('admin')}><IonIcon icon={shieldCheckmarkOutline} slot="start" />{!desktopCollapsed && <IonLabel>Administration</IonLabel>}</IonButton>}
+            <IonButton fill="clear" expand="block" onClick={() => navigate('settings')}><IonIcon icon={settingsOutline} slot="start" />{!desktopCollapsed && <IonLabel>Paramètres</IonLabel>}</IonButton>
+            <IonButton color="danger" fill="clear" expand="block" onClick={logout}><IonIcon icon={logOutOutline} slot="start" />{!desktopCollapsed && <IonLabel>Déconnexion</IonLabel>}</IonButton>
+            <IonButton fill="clear" onClick={() => setDesktopCollapsed((value) => !value)} aria-label="Réduire le menu"><IonIcon icon={desktopCollapsed ? chevronForwardOutline : chevronBackOutline} /></IonButton>
           </div>
         </aside>
       </div>
 
       <IonHeader className="mobile-header">
         <IonToolbar>
-          <IonMenuToggle>
-            <IonButton fill="clear" aria-label="Ouvrir le menu">
-              <IonIcon icon={menuOutline} />
-            </IonButton>
-          </IonMenuToggle>
-          <IonTitle>GestCy</IonTitle>
-          <IonButton fill="clear" onClick={() => navigate('stock')} aria-label="Alertes stock">
-            <IonIcon icon={notificationsOutline} />
-            {lowStock > 0 && <span className="notification-dot">{lowStock}</span>}
-          </IonButton>
+          <IonButton fill="clear" onClick={goBack} aria-label="Retour"><IonIcon icon={chevronBackOutline} /></IonButton>
+          <IonTitle>ASTRA</IonTitle>
+          <IonButton fill="clear" onClick={() => navigate('stock')} aria-label="Alertes stock"><IonIcon icon={notificationsOutline} />{lowStock > 0 && <span className="notification-dot">{lowStock}</span>}</IonButton>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent id="main-content" fullscreen className={`page-content ${theme.bg} ${desktopCollapsed ? "desktop-sidebar-collapsed" : "desktop-sidebar-expanded"}`}>
-        <main className="page-container">
-          <PageComponent />
-        </main>
+      <IonContent id="main-content" fullscreen className={`page-content ${theme.bg} ${desktopCollapsed ? 'desktop-sidebar-collapsed' : 'desktop-sidebar-expanded'}`}>
+        <main className="page-container"><PageComponent /></main>
       </IonContent>
+
+      <nav className="mobile-bottom-nav" aria-label="Navigation mobile principale">
+        {MOBILE_NAV.map(([id,label,icon]) => <button key={id} type="button" className={`mobile-nav-item ${currentView === id ? 'active' : ''}`} onClick={() => navigate(id)} aria-label={label} aria-current={currentView === id ? 'page' : undefined}><IonIcon icon={icon} />{id === 'stock' && lowStock > 0 && <span className="mobile-stock-badge">{lowStock}</span>}</button>)}
+        <button type="button" className={`mobile-nav-item ${moreOpen ? 'active' : ''}`} onClick={() => setMoreOpen(true)} aria-label="Plus"><IonIcon icon={ellipsisHorizontalOutline} /></button>
+      </nav>
+
+      <IonActionSheet isOpen={moreOpen} onDidDismiss={() => setMoreOpen(false)} header="ASTRA" buttons={[
+        ...SECONDARY_NAV.map(([id,label,icon]) => ({ text: label, icon, handler: () => navigate(id) })),
+        ...(currentUser?.role === 'admin' ? [{ text: 'Administration', icon: shieldCheckmarkOutline, handler: () => navigate('admin') }] : []),
+        { text: 'Déconnexion', role: 'destructive' as const, icon: logOutOutline, handler: logout },
+        { text: 'Annuler', role: 'cancel' as const },
+      ]} />
     </IonPage>
   );
 }
